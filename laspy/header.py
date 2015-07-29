@@ -1,6 +1,6 @@
 import datetime
 import uuid
-import util
+from . import util
 import struct
 import copy
 import numpy as np
@@ -47,7 +47,7 @@ class ParseableVLR():
                 print("WARNING: Invalid body length for GeoKeyDictionaryTag, Not parsing.")
                 self.body_fmt = None
                 return
-            for sKeyEntry in xrange(bytes_left/8):
+            for sKeyEntry in range(bytes_left/8):
                 self.body_fmt.add("wKeyId_%i" % sKeyEntry, "ctypes.c_ushort", 1)
                 self.body_fmt.add("wTIFFTagLocation_%i" % sKeyEntry, "ctypes.c_ushort", 1)
                 self.body_fmt.add("wCount_%i" % sKeyEntry, "ctypes.c_ushort", 1)
@@ -59,7 +59,7 @@ class ParseableVLR():
             if self.rec_len_after_header % 8 != 0:
                 print("WARNING: Invalid body length for GeoDoubleParamsTag, not parsing.")
                 return
-            for i in xrange(self.rec_len_after_header/8):
+            for i in range(self.rec_len_after_header/8):
                 self.body_fmt.add("param_%i" % i, "ctypes.c_double", 1)
 
         elif "LASF_Projection" in self.user_id and self.record_id == 34737:
@@ -73,7 +73,7 @@ class ParseableVLR():
             if self.rec_len_after_header % 16 != 0:
                 print("WARNING: Invalid body length for classification lookup, not parsing.")
                 return
-            for i in xrange(self.rec_len_after_header / 16):
+            for i in range(self.rec_len_after_header / 16):
                 self.body_fmt.add("ClassNumber_%i", "ctypes.c_ubyte", 1)
                 self.body_fmt.add("Description_%i", "ctypes.c_char", 15)
 
@@ -83,7 +83,7 @@ class ParseableVLR():
             if self.rec_len_after_header % 257 != 0:
                 print("WARNING: Invalid body length for header flight line lookup, not parsing.")
                 return
-            for i in xrange(self.rec_len_after_header / 257):
+            for i in range(self.rec_len_after_header / 257):
                 self.body_fmt.add("FileMarkerNumber_%i", "ctypes.c_ubyte", 1)
                 self.body_fmt.add("Filename_%i", "ctypes.c_char", 256)
 
@@ -117,7 +117,7 @@ class ParseableVLR():
             raise util.LaspyException("Not a known VLR/EVLR type, can't pack parsed_body")
         try:
             packed = struct.pack(self.body_fmt.pt_fmt_long, *self.parsed_body)
-        except Exception, error:    
+        except Exception as error:    
             print("Error packing VLR data, using current raw vlr body.")
             print(error)
             packed = self.VLR_body
@@ -305,7 +305,7 @@ class EVLR(ParseableVLR):
             self.setup_extra_bytes_spec(self.VLR_body)
         try:
             self.parse_data()
-        except Exception, err:
+        except Exception as err:
             print("Error Parsing EVLR Body Data:")
             print(err)
 
@@ -317,7 +317,7 @@ class EVLR(ParseableVLR):
                                      specification, must be multiple of 192.""")
         else:
             recs = self.rec_len_after_header / 192
-            for i in xrange(recs):
+            for i in range(recs):
                 new_rec = ExtraBytesStruct()
                 new_rec.build_from_vlr(self, i)
             self.add_extra_dim(new_rec)
@@ -339,7 +339,7 @@ class EVLR(ParseableVLR):
         self.fmt = reader.evlr_formats
         try:
             self.parse_data()
-        except Exception, err:
+        except Exception as err:
             print("Error Parsing EVLR Body Data:")
             print(err)
 
@@ -407,7 +407,7 @@ class VLR(ParseableVLR):
             self.setup_extra_bytes_spec(self.VLR_body)
         try:
             self.parse_data()
-        except Exception, err:
+        except Exception as err:
             print("Error Parsing VLR Body Data:")
             print(err)
 
@@ -417,10 +417,10 @@ class VLR(ParseableVLR):
         '''Build a vlr from a reader capable of reading in the data.'''
         self.reader = reader
         self.reserved = reader.read_words("reserved")
-        self.user_id = "".join(reader.read_words("user_id"))
+        self.user_id = "".join(str(reader.read_words("user_id")))
         self.record_id = reader.read_words("record_id")
         self.rec_len_after_header = reader.read_words("rec_len_after_header")
-        self.description = "".join(reader.read_words("description"))
+        self.description = "".join(str(reader.read_words("description")))
         self.VLR_body = reader.read(self.rec_len_after_header)
         if "LASF_Spec" in self.user_id and self.record_id == 4:
             self.setup_extra_bytes_spec(self.VLR_body)
@@ -429,7 +429,7 @@ class VLR(ParseableVLR):
         self.fmt = reader.vlr_formats
         try:
             self.parse_data()
-        except Exception, err:
+        except Exception as err:
             print("Error Parsing EVLR Body Data:")
             print(err)
 
@@ -444,7 +444,7 @@ class VLR(ParseableVLR):
                                      specification, must be multiple of 192.""")
         else:
             recs = self.rec_len_after_header / 192
-            for i in xrange(recs):
+            for i in range(recs):
                 new_rec = ExtraBytesStruct()
                 new_rec.build_from_vlr(self, i) 
                 self.add_extra_dim(new_rec)
