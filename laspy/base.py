@@ -2,7 +2,7 @@ import mmap
 import laspy
 import datetime
 import struct
-import util
+from . import util
 from types import GeneratorType
 import numpy as np
 import copy
@@ -55,8 +55,9 @@ class DataProvider():
             Laspy can not currently decode laz, though the header, VLRs, and EVLRs are available.""")
         if type(self._mmap) == bool:
             self.map() 
-        self.pointfmt = np.dtype([("point", zip([x.name for x in self.manager.point_format.specs],
-                                [x.np_fmt for x in self.manager.point_format.specs]))]) 
+        self.pointfmt = np.dtype([("point", list(zip([x.name for x in self.manager.point_format.specs],
+                                [x.np_fmt for x in self.manager.point_format.specs])))]) 
+
         if not self.manager.header.version in ("1.3", "1.4"): 
             self._pmap = np.frombuffer(self._mmap, self.pointfmt, 
                         offset = self.manager.header.data_offset)
@@ -319,7 +320,7 @@ class FileManager():
     
     def packed_str(self, string):
         '''Take a little endian binary string, and convert it to a python int.'''
-        return(sum([int(string[idx])*(2**idx) for idx in xrange(len(string))]))
+        return(sum([int(string[idx])*(2**idx) for idx in range(len(string))]))
 
     def binary_str(self,N, zerolen = 8):
         '''Take a python integer and create a binary string padded to len zerolen.'''
@@ -368,7 +369,7 @@ class FileManager():
         '''Read a consecutive sequence of packed binary data, return a single
         element or list''' 
         outData = []
-        for i in xrange(num):
+        for i in range(num):
             dat = self.read(bytes)
             outData.append(struct.unpack(fmt, dat)[0])
         if len(outData) > 1:
@@ -378,7 +379,7 @@ class FileManager():
     def _pack_words(self, fmt, num, bytes, val):
         if num == 1:
             return(struct.pack(fmt, val))
-        outData = "".join([struct.pack(fmt, val[i]) for i in xrange(num)])
+        outData = "".join([struct.pack(fmt, val[i]) for i in range(num)])
         return(outData)
 
 
@@ -415,7 +416,7 @@ class FileManager():
         elif self.header.version == "1.4":
             self.seek(self.header.start_first_evlr, rel = False)
             num_vlrs = self.get_header_property("num_evlrs")
-        for i in xrange(num_vlrs): 
+        for i in range(num_vlrs): 
             new_vlr = laspy.header.EVLR(None, None, None)
             new_vlr.build_from_reader(self)
             self.evlrs.append(new_vlr)  
@@ -426,7 +427,7 @@ class FileManager():
         '''Catalogue the variable length records'''
         self.vlrs = []
         self.seek(self.header.header_size, rel = False)
-        for i in xrange(self.get_header_property("num_variable_len_recs")): 
+        for i in range(self.get_header_property("num_variable_len_recs")): 
             new_vlr = laspy.header.VLR(None, None, None)
             new_vlr.build_from_reader(self)
             self.vlrs.append(new_vlr)
@@ -485,7 +486,7 @@ class FileManager():
         #fmtlen = len(single_fmt)
         #big_fmt_string = "".join(["<", single_fmt*self.header.point_records_count])
         #pts =  unpack(big_fmt_string, self.data_provider._mmap[self.header.data_offset:self.data_provider._mmap.size()])
-        #return((laspy.util.Point(self, unpacked_list = pts[fmtlen*i:fmtlen*(i+1)]) for i in xrange(self.header.point_records_count)))
+        #return((laspy.util.Point(self, unpacked_list = pts[fmtlen*i:fmtlen*(i+1)]) for i in range(self.header.point_records_count)))
         #return([laspy.util.Point(self,x) for x in self._get_raw_dimension(0, self.header.data_record_length)])
         #return((x[0] for x in self.data_provider._pmap))
         return(self.data_provider._pmap)
@@ -523,7 +524,7 @@ class FileManager():
         length = int(self.header.data_record_length)
         offs = int(self.header.data_offset)
         self.point_refs = [x*length + offs
-                for x in xrange(pts)]
+                for x in range(pts)]
         return
 
     def get_dimension(self, name):
@@ -574,7 +575,7 @@ class FileManager():
         if spec.num == 1:
             return(struct.unpack(spec.fmt, data)[0])
         unpacked = map(lambda x: struct.unpack(spec.fmt, 
-            data[x*spec.length:(x+1)*spec.length])[0], xrange(spec.num))
+            data[x*spec.length:(x+1)*spec.length])[0], range(spec.num))
         if spec.pack:
             return("".join([str(x[0]) for x in unpacked]))
         return(unpacked) 
@@ -1112,7 +1113,7 @@ class Writer(FileManager):
             _mmap[start+offs:start+offs+length] = packer.pack(new_dim[i])
             i += 1
 
-        #idx = xrange(self.calc_point_recs)
+        #idx = range(self.calc_point_recs)
         #starts = (self.point_refs[i] + offs for i in idx) 
         #def f_set(x):
         #    i = starts.next()
@@ -1160,7 +1161,7 @@ class Writer(FileManager):
             raise laspy.util.LaspyException("Error, new dimension length (%s) does not match"%str(len(new_raw_points)) + " the number of points (%s)" % str(ptrecs)) 
         if type(self.point_refs) == bool:
             self.build_point_refs()
-        idx = (xrange(len(self.point_refs)))
+        idx = (range(len(self.point_refs)))
         def f(x):
             self.data_provider._mmap[self.point_refs[x]:self.point_refs[x] 
                     + self.header.data_record_length] = new_raw_points[x]
@@ -1204,7 +1205,7 @@ class Writer(FileManager):
             self.data_provider._mmap[(x*dim.length + rec_offs + 
                     dim.offs):((x+1)*dim.length + rec_offs 
                     + dim.offs)]=outbyte
-        map(f, xrange(dim.num))
+        map(f, range(dim.num))
         return
 
     def set_raw_header_property(self, name, value):
@@ -1292,7 +1293,7 @@ class Writer(FileManager):
         else:
             outArr = (["0"*8]*len(arrs[0]))
        
-        for i in xrange(len(arrs[0])):
+        for i in range(len(arrs[0])):
             tmp = ""
             tmp = []
             j = 0
