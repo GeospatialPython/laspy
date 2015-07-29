@@ -1,6 +1,6 @@
 __version__ = '1.2.5'
 
-import base
-import file
-import header
-import util
+from . import base
+from . import file
+from . import header
+from . import util
