@@ -2,7 +2,7 @@ LAS-Read-Writer-in-Python
 =========================
 
 Laspy is a python library for reading, modifying and creating .LAS LIDAR files. 
-It was designed for python 2.7
+This fork is an attempt to port the core library to Python 3.4 for a project.  The full unit tests have not been run yet but the library seems to be working.
 
 API Documentation and tutorials are available at http://pythonhosted.org/laspy.
 Installation is standard:
